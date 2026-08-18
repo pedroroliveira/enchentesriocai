@@ -1,0 +1,19 @@
+{
+  "cameras": [
+    {
+      "id": "cam-1",
+      "titulo": "Câmera 1 — Rio Caí",
+      "embedId": "aEcqkd4puUw"
+    },
+    {
+      "id": "cam-2",
+      "titulo": "Câmera 2 — Rio Caí",
+      "embedId": "R1OSBfhaGOA"
+    },
+    {
+      "id": "cam-3",
+      "titulo": "Câmera 3 — Rio Caí",
+      "embedId": "MPvf9sJtg7A"
+    }
+  ]
+}

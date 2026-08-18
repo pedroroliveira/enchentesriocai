@@ -1,0 +1,133 @@
+{
+  "statusBanner": {
+    "nivel": "NORMAL",
+    "mensagem": "Situação atual da bacia do Caí: normal. Sem alertas ativos.",
+    "atualizadoEm": "30/07/2026 às 18:00"
+  },
+  "hero": {
+    "titulo": "Monitoramento dos Rios do Vale do Caí",
+    "subtitulo": "Acompanhe em tempo real os níveis dos rios da bacia do Caí, alertas de enchentes e previsão de chuvas para a região.",
+    "ctaLabel": "Ver status dos rios",
+    "ctaHref": "#rios"
+  },
+  "rios": [
+    {
+      "id": "rio-cai-sao-sebastiao",
+      "nome": "Rio Caí",
+      "cidade": "São Sebastião do Caí",
+      "nivel": "3,42",
+      "unidade": "m",
+      "variacao": "+0,08",
+      "tendencia": "subindo",
+      "situacao": "normal",
+      "cota_atencao": "5,0",
+      "cota_alerta": "6,5",
+      "cota_emergencia": "8,0"
+    },
+    {
+      "id": "rio-cai-bom-principio",
+      "nome": "Rio Caí",
+      "cidade": "Bom Princípio",
+      "nivel": "2,87",
+      "unidade": "m",
+      "variacao": "+0,05",
+      "tendencia": "estavel",
+      "situacao": "normal",
+      "cota_atencao": "4,5",
+      "cota_alerta": "6,0",
+      "cota_emergencia": "7,5"
+    },
+    {
+      "id": "rio-fao-feliz",
+      "nome": "Rio Fão",
+      "cidade": "Feliz",
+      "nivel": "1,95",
+      "unidade": "m",
+      "variacao": "-0,03",
+      "tendencia": "descendo",
+      "situacao": "normal",
+      "cota_atencao": "3,5",
+      "cota_alerta": "4,8",
+      "cota_emergencia": "6,0"
+    },
+    {
+      "id": "rio-cai-montenegro",
+      "nome": "Rio Caí",
+      "cidade": "Montenegro",
+      "nivel": "4,15",
+      "unidade": "m",
+      "variacao": "+0,12",
+      "tendencia": "subindo",
+      "situacao": "atencao",
+      "cota_atencao": "4,0",
+      "cota_alerta": "6,0",
+      "cota_emergencia": "8,5"
+    },
+    {
+      "id": "rio-cai-triunfo",
+      "nome": "Rio Caí",
+      "cidade": "Triunfo",
+      "nivel": "5,30",
+      "unidade": "m",
+      "variacao": "+0,20",
+      "tendencia": "subindo",
+      "situacao": "normal",
+      "cota_atencao": "6,5",
+      "cota_alerta": "8,0",
+      "cota_emergencia": "10,0"
+    },
+    {
+      "id": "rio-cai-sao-jeronimo",
+      "nome": "Rio Caí",
+      "cidade": "São Jerônimo",
+      "nivel": "6,80",
+      "unidade": "m",
+      "variacao": "+0,30",
+      "tendencia": "subindo",
+      "situacao": "normal",
+      "cota_atencao": "8,0",
+      "cota_alerta": "10,0",
+      "cota_emergencia": "12,0"
+    }
+  ],
+  "alertas": {
+    "temAlerta": false,
+    "mensagemSemAlerta": "Nenhum alerta ativo no momento.",
+    "lista": []
+  },
+  "previsao": [
+    {
+      "id": "prev-hoje",
+      "dia": "Hoje",
+      "data": "30/07",
+      "condicao": "parcialmente_nublado",
+      "chuva_mm": "5",
+      "impacto": "Baixo",
+      "descricao": "Chuva fraca isolada. Sem impacto significativo nos rios."
+    },
+    {
+      "id": "prev-amanha",
+      "dia": "Amanhã",
+      "data": "31/07",
+      "condicao": "chuva",
+      "chuva_mm": "28",
+      "impacto": "Moderado",
+      "descricao": "Chuva moderada prevista. Monitorar níveis dos rios."
+    },
+    {
+      "id": "prev-sabado",
+      "dia": "Sábado",
+      "data": "01/08",
+      "condicao": "chuva_forte",
+      "chuva_mm": "55",
+      "impacto": "Alto",
+      "descricao": "Chuva intensa. Possível elevação dos rios acima da cota de atenção."
+    }
+  ],
+  "cta": {
+    "titulo": "Receba alertas de enchentes",
+    "descricao": "Cadastre seu e-mail ou WhatsApp e seja notificado imediatamente quando os rios atingirem cotas de atenção ou alerta na sua região.",
+    "placeholderEmail": "Seu e-mail ou número de WhatsApp",
+    "botaoLabel": "Cadastrar alertas"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "hero": {
+    "titulo": "Previsão de Chuvas",
+    "subtitulo": "Dados meteorológicos detalhados para a região do Vale do Caí, RS. Fonte: Open-Meteo."
+  },
+  "fontes": [
+    {
+      "id": "fonte-openmeteo",
+      "nome": "Open-Meteo",
+      "descricao": "API de previsão meteorológica de código aberto",
+      "url": "https://open-meteo.com"
+    },
+    {
+      "id": "fonte-inmet",
+      "nome": "INMET",
+      "descricao": "Instituto Nacional de Meteorologia — alertas ativos",
+      "url": "https://www.inmet.gov.br"
+    },
+    {
+      "id": "fonte-ana",
+      "nome": "ANA",
+      "descricao": "Agência Nacional de Águas — níveis dos rios",
+      "url": "https://www.ana.gov.br"
+    }
+  ]
+}

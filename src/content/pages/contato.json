@@ -1,0 +1,38 @@
+{
+  "hero": {
+    "titulo": "Contato",
+    "subtitulo": "Encontrou um dado incorreto, tem uma sugestão ou quer saber mais sobre o projeto? Envie uma mensagem — respondemos em até 48 horas."
+  },
+  "info": {
+    "email": "contato@enchentesvaledocai.com.br",
+    "regiao": "Vale do Caí, Rio Grande do Sul",
+    "tempoResposta": "Até 48 horas úteis"
+  },
+  "emergencias": [
+    {
+      "id": "defesa-civil",
+      "label": "Defesa Civil",
+      "numero": "199"
+    },
+    {
+      "id": "bombeiros",
+      "label": "Bombeiros",
+      "numero": "193"
+    },
+    {
+      "id": "samu",
+      "label": "SAMU",
+      "numero": "192"
+    }
+  ],
+  "formulario": {
+    "titulo": "Enviar mensagem",
+    "placeholderNome": "Seu nome",
+    "placeholderEmail": "seu@email.com",
+    "placeholderMensagem": "Descreva sua dúvida, sugestão ou reporte o problema...",
+    "botaoEnviar": "Enviar mensagem",
+    "sucessoTitulo": "Mensagem enviada!",
+    "sucessoDescricao": "Recebemos sua mensagem e responderemos em até 48 horas no e-mail informado.",
+    "privacidade": "Seus dados são usados apenas para responder à sua mensagem e não são compartilhados com terceiros."
+  }
+}

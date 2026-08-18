@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0A1420"/>
+
+  <!-- Grid lines -->
+  <g opacity="0.04" stroke="#4A90D9" stroke-width="1">
+    <line x1="0" y1="105" x2="1200" y2="105"/>
+    <line x1="0" y1="210" x2="1200" y2="210"/>
+    <line x1="0" y1="315" x2="1200" y2="315"/>
+    <line x1="0" y1="420" x2="1200" y2="420"/>
+    <line x1="0" y1="525" x2="1200" y2="525"/>
+    <line x1="200" y1="0" x2="200" y2="630"/>
+    <line x1="400" y1="0" x2="400" y2="630"/>
+    <line x1="600" y1="0" x2="600" y2="630"/>
+    <line x1="800" y1="0" x2="800" y2="630"/>
+    <line x1="1000" y1="0" x2="1000" y2="630"/>
+  </g>
+
+  <!-- Left accent bar -->
+  <rect x="0" y="0" width="6" height="630" fill="#4A90D9"/>
+
+  <!-- Wave shape bottom -->
+  <path d="M0 500 Q150 460 300 490 Q450 520 600 480 Q750 440 900 470 Q1050 500 1200 460 L1200 630 L0 630 Z" fill="#0d1a27" opacity="0.8"/>
+
+  <!-- Icon: wave circle -->
+  <circle cx="140" cy="200" r="52" fill="#4A90D9" opacity="0.12"/>
+  <circle cx="140" cy="200" r="40" fill="none" stroke="#4A90D9" stroke-width="1.5" opacity="0.4"/>
+  <!-- Wave icon paths -->
+  <path d="M118 196 Q124 188 130 196 Q136 204 142 196 Q148 188 154 196 Q160 204 166 196" fill="none" stroke="#4A90D9" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M118 206 Q124 198 130 206 Q136 214 142 206 Q148 198 154 206 Q160 214 166 206" fill="none" stroke="#4A90D9" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Status dot -->
+  <circle cx="140" cy="270" r="6" fill="#10b981"/>
+  <text x="155" y="275" font-family="system-ui, sans-serif" font-size="13" fill="#10b981" font-weight="600">MONITORAMENTO ATIVO</text>
+
+  <!-- Main title -->
+  <text x="140" y="340" font-family="system-ui, sans-serif" font-size="56" font-weight="800" fill="#ffffff" letter-spacing="-1">Enchentes</text>
+  <text x="140" y="408" font-family="system-ui, sans-serif" font-size="56" font-weight="800" fill="#4A90D9" letter-spacing="-1">Vale do Caí</text>
+
+  <!-- Subtitle -->
+  <text x="140" y="460" font-family="system-ui, sans-serif" font-size="22" fill="#8aabcc" font-weight="400">Monitoramento em tempo real · Alertas · Previsão de Chuvas</text>
+
+  <!-- Right side stats -->
+  <!-- Card 1 -->
+  <rect x="780" y="140" width="180" height="100" rx="10" fill="#0d1a27" stroke="#294667" stroke-width="1"/>
+  <text x="870" y="178" font-family="system-ui, sans-serif" font-size="36" font-weight="800" fill="#4A90D9" text-anchor="middle">8</text>
+  <text x="870" y="200" font-family="system-ui, sans-serif" font-size="12" fill="#6b8fad" text-anchor="middle" font-weight="500">ESTAÇÕES</text>
+  <text x="870" y="218" font-family="system-ui, sans-serif" font-size="12" fill="#6b8fad" text-anchor="middle">MONITORADAS</text>
+
+  <!-- Card 2 -->
+  <rect x="980" y="140" width="180" height="100" rx="10" fill="#0d1a27" stroke="#294667" stroke-width="1"/>
+  <text x="1070" y="178" font-family="system-ui, sans-serif" font-size="36" font-weight="800" fill="#10b981" text-anchor="middle">24h</text>
+  <text x="1070" y="200" font-family="system-ui, sans-serif" font-size="12" fill="#6b8fad" text-anchor="middle" font-weight="500">DADOS EM</text>
+  <text x="1070" y="218" font-family="system-ui, sans-serif" font-size="12" fill="#6b8fad" text-anchor="middle">TEMPO REAL</text>
+
+  <!-- Card 3 -->
+  <rect x="780" y="260" width="180" height="100" rx="10" fill="#0d1a27" stroke="#294667" stroke-width="1"/>
+  <text x="870" y="298" font-family="system-ui, sans-serif" font-size="36" font-weight="800" fill="#d9934a" text-anchor="middle">ANA</text>
+  <text x="870" y="320" font-family="system-ui, sans-serif" font-size="12" fill="#6b8fad" text-anchor="middle" font-weight="500">FONTE OFICIAL</text>
+  <text x="870" y="338" font-family="system-ui, sans-serif" font-size="12" fill="#6b8fad" text-anchor="middle">HIDROWEB</text>
+
+  <!-- Card 4 -->
+  <rect x="980" y="260" width="180" height="100" rx="10" fill="#0d1a27" stroke="#294667" stroke-width="1"/>
+  <text x="1070" y="298" font-family="system-ui, sans-serif" font-size="36" font-weight="800" fill="#f87171" text-anchor="middle">RS</text>
+  <text x="1070" y="320" font-family="system-ui, sans-serif" font-size="12" fill="#6b8fad" text-anchor="middle" font-weight="500">VALE DO CAÍ</text>
+  <text x="1070" y="338" font-family="system-ui, sans-serif" font-size="12" fill="#6b8fad" text-anchor="middle">RIO GRANDE DO SUL</text>
+
+  <!-- Bottom domain -->
+  <text x="140" y="590" font-family="system-ui, sans-serif" font-size="16" fill="#294667" font-weight="500">enchentesvaledocai.com.br</text>
+</svg>

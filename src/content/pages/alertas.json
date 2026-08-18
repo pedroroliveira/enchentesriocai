@@ -1,0 +1,40 @@
+{
+  "hero": {
+    "titulo": "Alertas e Avisos",
+    "subtitulo": "Alertas ativos, histórico de ocorrências e cadastro para receber notificações de enchentes no Vale do Caí."
+  },
+  "cidades": [
+    {
+      "id": "c-sfs",
+      "nome": "São Francisco de Paula"
+    },
+    {
+      "id": "c-canela",
+      "nome": "Canela"
+    },
+    {
+      "id": "c-ssc",
+      "nome": "São Sebastião do Caí"
+    },
+    {
+      "id": "c-bp",
+      "nome": "Bom Princípio"
+    },
+    {
+      "id": "c-feliz",
+      "nome": "Feliz"
+    },
+    {
+      "id": "c-montenegro",
+      "nome": "Montenegro"
+    },
+    {
+      "id": "c-triunfo",
+      "nome": "Triunfo"
+    },
+    {
+      "id": "c-sj",
+      "nome": "São Jerônimo"
+    }
+  ]
+}

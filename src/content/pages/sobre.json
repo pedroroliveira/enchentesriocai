@@ -1,0 +1,171 @@
+{
+  "hero": {
+    "titulo": "Sobre o Serviço",
+    "subtitulo": "Conheça o projeto Enchentes Vale do Caí, nossa cobertura, fontes de dados e como entrar em contato."
+  },
+  "missao": {
+    "titulo": "Nossa Missão",
+    "texto": "O Enchentes Vale do Caí é um serviço de monitoramento hidrológico independente dedicado à bacia do Rio Caí, no Rio Grande do Sul. Nosso objetivo é fornecer informações claras, acessíveis e em tempo real sobre os níveis dos rios, previsões de chuva e alertas de enchentes — ajudando moradores, defesa civil e gestores públicos a tomar decisões com mais segurança.",
+    "valores": [
+      {
+        "id": "v-transparencia",
+        "titulo": "Transparência",
+        "descricao": "Dados abertos, fontes identificadas e metodologia documentada."
+      },
+      {
+        "id": "v-acessibilidade",
+        "titulo": "Acessibilidade",
+        "descricao": "Informação gratuita e de fácil compreensão para toda a população."
+      },
+      {
+        "id": "v-tempestividade",
+        "titulo": "Tempestividade",
+        "descricao": "Alertas emitidos com a maior antecedência possível para proteger vidas."
+      },
+      {
+        "id": "v-colaboracao",
+        "titulo": "Colaboração",
+        "descricao": "Integração com órgãos públicos, pesquisadores e comunidades locais."
+      }
+    ]
+  },
+  "cobertura": {
+    "titulo": "Cobertura da Bacia",
+    "descricao": "Monitoramos toda a extensão da bacia hidrográfica do Rio Caí, desde as nascentes na Serra Gaúcha até a foz no Lago Guaíba.",
+    "estatisticas": [
+      {
+        "id": "est-area",
+        "valor": "4.800",
+        "unidade": "km²",
+        "label": "Área da bacia"
+      },
+      {
+        "id": "est-extensao",
+        "valor": "210",
+        "unidade": "km",
+        "label": "Extensão do Rio Caí"
+      },
+      {
+        "id": "est-municipios",
+        "valor": "48",
+        "unidade": "",
+        "label": "Municípios na bacia"
+      },
+      {
+        "id": "est-estacoes",
+        "valor": "8",
+        "unidade": "",
+        "label": "Estações monitoradas"
+      }
+    ],
+    "municipiosPrincipais": [
+      {
+        "id": "m-sfp",
+        "nome": "São Francisco de Paula",
+        "regiao": "Nascentes"
+      },
+      {
+        "id": "m-canela",
+        "nome": "Canela",
+        "regiao": "Alto Caí"
+      },
+      {
+        "id": "m-ssc",
+        "nome": "São Sebastião do Caí",
+        "regiao": "Médio Caí"
+      },
+      {
+        "id": "m-bp",
+        "nome": "Bom Princípio",
+        "regiao": "Médio Caí"
+      },
+      {
+        "id": "m-feliz",
+        "nome": "Feliz",
+        "regiao": "Rio Fão"
+      },
+      {
+        "id": "m-montenegro",
+        "nome": "Montenegro",
+        "regiao": "Baixo Caí"
+      },
+      {
+        "id": "m-triunfo",
+        "nome": "Triunfo",
+        "regiao": "Baixo Caí"
+      },
+      {
+        "id": "m-sj",
+        "nome": "São Jerônimo",
+        "regiao": "Foz"
+      }
+    ]
+  },
+  "fontesDados": {
+    "titulo": "Fontes de Dados",
+    "descricao": "Utilizamos dados de fontes oficiais e abertas para garantir a confiabilidade das informações.",
+    "fontes": [
+      {
+        "id": "f-ana",
+        "nome": "ANA — Agência Nacional de Águas",
+        "descricao": "Dados de nível e vazão das estações fluviométricas da rede hidrometeorológica nacional (HidroWeb).",
+        "url": "https://www.ana.gov.br",
+        "tipo": "Hidrologia"
+      },
+      {
+        "id": "f-inmet",
+        "nome": "INMET — Instituto Nacional de Meteorologia",
+        "descricao": "Alertas meteorológicos, dados de precipitação e previsão do tempo para o Rio Grande do Sul.",
+        "url": "https://www.inmet.gov.br",
+        "tipo": "Meteorologia"
+      },
+      {
+        "id": "f-openmeteo",
+        "nome": "Open-Meteo",
+        "descricao": "API de previsão meteorológica de código aberto com modelos de alta resolução para precipitação e temperatura.",
+        "url": "https://open-meteo.com",
+        "tipo": "Previsão"
+      },
+      {
+        "id": "f-defesacivil",
+        "nome": "Defesa Civil RS",
+        "descricao": "Alertas e informações operacionais da Defesa Civil do Estado do Rio Grande do Sul.",
+        "url": "https://www.defesacivil.rs.gov.br",
+        "tipo": "Emergências"
+      }
+    ]
+  },
+  "tecnologia": {
+    "titulo": "Tecnologia",
+    "descricao": "O serviço é desenvolvido com tecnologias modernas de código aberto, priorizando desempenho, confiabilidade e acessibilidade.",
+    "itens": [
+      {
+        "id": "t-frontend",
+        "nome": "Interface Web",
+        "detalhe": "React, TypeScript, Tailwind CSS"
+      },
+      {
+        "id": "t-backend",
+        "nome": "Servidor",
+        "detalhe": "Node.js, Express"
+      },
+      {
+        "id": "t-banco",
+        "nome": "Banco de dados",
+        "detalhe": "PostgreSQL com Drizzle ORM"
+      },
+      {
+        "id": "t-apis",
+        "nome": "Integração de dados",
+        "detalhe": "APIs ANA HidroWeb, INMET, Open-Meteo"
+      }
+    ]
+  },
+  "contato": {
+    "titulo": "Contato",
+    "descricao": "Tem dúvidas, sugestões ou quer colaborar com o projeto? Entre em contato.",
+    "email": "contato@enchentesvaledocai.com.br",
+    "github": "https://github.com/enchentesvaledocai",
+    "aviso": "Este é um serviço de informação independente. Em situações de emergência, acione sempre a Defesa Civil pelo número 199."
+  }
+}
