@@ -1,6 +1,7 @@
 import {
   boolean,
   index,
+  integer,
   numeric,
   pgEnum,
   pgTable,
@@ -73,6 +74,8 @@ export const estacoes = pgTable('estacoes', {
   cotaAtencao: numeric('cota_atencao', { precision: 6, scale: 2 }),
   cotaAlerta: numeric('cota_alerta', { precision: 6, scale: 2 }),
   cotaEmergencia: numeric('cota_emergencia', { precision: 6, scale: 2 }),
+  /** Ordem crescente de exibição dos cards. Nulos vão para o fim da lista. */
+  ordem: integer('ordem'),
   ativo: boolean('ativo').notNull().default(true),
 });
 

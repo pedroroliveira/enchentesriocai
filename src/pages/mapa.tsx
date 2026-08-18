@@ -99,11 +99,27 @@ interface EstacaoAPI {
   cotaAtencao: number | null;
   cotaAlerta: number | null;
   cotaEmergencia: number | null;
+  /** Ordem crescente de exibição dos cards (null = sem ordem definida). */
+  ordem: number | null;
   fonte: string;
   atualizadoEm: string | null;
 }
 
 // ─── Helpers visuais ─────────────────────────────────────────────────────────
+
+/**
+ * Ordena os cards pelo campo `ordem` cadastrado no banco. Estações sem ordem
+ * definida vão para o fim, com o nome como desempate.
+ */
+function ordenarEstacoes(lista: EstacaoAPI[]): EstacaoAPI[] {
+  return [...lista].sort((a, b) => {
+    const ordemA = a.ordem ?? Number.MAX_SAFE_INTEGER;
+    const ordemB = b.ordem ?? Number.MAX_SAFE_INTEGER;
+    if (ordemA !== ordemB) return ordemA - ordemB;
+    return a.nomeExibicao.localeCompare(b.nomeExibicao, 'pt-BR');
+  });
+}
+
 
 const SITUACAO_CONFIG = {
   normal:     { label: 'Normal',     dot: 'bg-emerald-400', ring: 'ring-emerald-400/40', text: 'text-emerald-400', border: 'border-emerald-500/40', bg: 'bg-emerald-500/15', svgFill: '#10b981' },
@@ -173,7 +189,7 @@ export default function MapaPage() {
       const res = await fetch('/api/estacoes');
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
-      const novas: EstacaoAPI[] = data.estacoes ?? [];
+      const novas: EstacaoAPI[] = ordenarEstacoes(data.estacoes ?? []);
       setEstacoes(novas);
       setAtualizadoEm(data.atualizadoEm ?? null);
       setErro(false);

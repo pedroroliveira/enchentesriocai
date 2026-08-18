@@ -47,11 +47,27 @@ interface EstacaoAPI {
   cotaAtencao: number | null;
   cotaAlerta: number | null;
   cotaEmergencia: number | null;
+  /** Ordem crescente de exibição dos cards (null = sem ordem definida). */
+  ordem: number | null;
   fonte: string;
   atualizadoEm: string | null;
 }
 
 // ─── helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Ordena os cards pelo campo `ordem` cadastrado no banco. Estações sem ordem
+ * definida vão para o fim, com o nome como desempate.
+ */
+function ordenarEstacoes(lista: EstacaoAPI[]): EstacaoAPI[] {
+  return [...lista].sort((a, b) => {
+    const ordemA = a.ordem ?? Number.MAX_SAFE_INTEGER;
+    const ordemB = b.ordem ?? Number.MAX_SAFE_INTEGER;
+    if (ordemA !== ordemB) return ordemA - ordemB;
+    return a.nomeExibicao.localeCompare(b.nomeExibicao, 'pt-BR');
+  });
+}
+
 
 const SITUACAO_CONFIG = {
   normal:     { label: 'Normal',     bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/30', dot: 'bg-emerald-400' },
@@ -187,7 +203,7 @@ export default function HomePage() {
       const res = await fetch('/api/estacoes');
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
-      setEstacoes(data.estacoes ?? []);
+      setEstacoes(ordenarEstacoes(data.estacoes ?? []));
       setAtualizadoEm(data.atualizadoEm ?? null);
       setErro(false);
     } catch {

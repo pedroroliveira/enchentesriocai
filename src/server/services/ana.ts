@@ -13,7 +13,7 @@
 
 import { db } from '../db/client.js';
 import { leituras, estacoes } from '../db/schema.js';
-import { eq, desc, and, gte, inArray, sql } from 'drizzle-orm';
+import { eq, asc, desc, and, gte, inArray, sql } from 'drizzle-orm';
 import { fetchEstacoesDefesaCivil, type DcrsLeitura } from './defesacivil.js';
 import { aplicarRedutorTelemetria, metrosParaCentimetros } from './nivel.js';
 
@@ -32,6 +32,8 @@ export interface LeituraEstacao {
   lng:           string | null;
   posX:          string | null;
   posY:          string | null;
+  /** Ordem crescente de exibição dos cards (null = sem ordem definida). */
+  ordem:         number | null;
   nivelM:        number | null;
   nivelCm:       number | null;
   dataHora:      string | null;
@@ -330,7 +332,13 @@ export async function getEstacoes(): Promise<LeituraEstacao[]> {
   const precisaAtualizar = !ultimaAtualizacao ||
     (agora.getTime() - ultimaAtualizacao.getTime()) > CACHE_TTL_MS;
 
-  const estacoesDB = await db.select().from(estacoes).where(eq(estacoes.ativo, true));
+  // A ordem dos cards vem do banco: `ordem` crescente, nulos por último e
+  // nome como desempate — o front-end apenas preserva esta sequência.
+  const estacoesDB = await db
+    .select()
+    .from(estacoes)
+    .where(eq(estacoes.ativo, true))
+    .orderBy(sql`${estacoes.ordem} asc nulls last`, asc(estacoes.nomeExibicao));
 
   if (precisaAtualizar) {
     const temCache = ultimaAtualizacao !== null;
@@ -406,6 +414,7 @@ export async function getEstacoes(): Promise<LeituraEstacao[]> {
       lng:           est.lng,
       posX:          est.posX,
       posY:          est.posY,
+      ordem:         est.ordem ?? null,
       nivelM,
       nivelCm,
       dataHora:      cache ? cache.dataHora.toISOString() : null,
