@@ -1,18 +1,15 @@
 import type { Request, Response } from 'express';
-import { db } from '../../db/client.js';
-import { alertas } from '../../db/schema.js';
-import { eq, desc } from 'drizzle-orm';
+import { getAlertasAtivos } from '../../services/alertas.js';
 
-export default async function handler(req: Request, res: Response) {
+/**
+ * Alertas ativos agora — derivados das leituras das estações e somados aos
+ * avisos manuais em aberto. Sempre retorna apenas o que está ativo: alerta
+ * que não corresponde mais ao nível do rio simplesmente deixa de existir.
+ */
+export default async function handler(_req: Request, res: Response) {
   try {
-    const { ativo } = req.query;
-    let rows;
-    if (ativo === 'true') {
-      rows = await db.select().from(alertas).where(eq(alertas.ativo, true)).orderBy(desc(alertas.criadoEm));
-    } else {
-      rows = await db.select().from(alertas).orderBy(desc(alertas.criadoEm));
-    }
-    res.json(rows);
+    const alertas = await getAlertasAtivos();
+    res.json(alertas);
   } catch (error) {
     res.status(500).json({ error: 'Erro ao buscar alertas', message: String(error) });
   }

@@ -7,7 +7,6 @@ import {
   TrendingDown,
   Minus,
   AlertTriangle,
-  CheckCircle,
   Bell,
   CloudRain,
   Cloud,
@@ -23,6 +22,7 @@ import {
 import { home } from 'virtual:content';
 import NotificacaoForm from '@/components/NotificacaoForm';
 import StationLocationLink from '@/components/StationLocationLink';
+import { calcularSituacaoBacia, resumoBacia, type Situacao } from '@/lib/bacia';
 
 // ─── tipos ──────────────────────────────────────────────────────────────────
 
@@ -30,7 +30,6 @@ const SITE = 'https://enchentesvaledocai.com.br';
 const POLL_INTERVAL = 5 * 60 * 1000; // 5 min — níveis e alertas
 const POLL_PREVISAO_INTERVAL = 30 * 60 * 1000; // 30 min — previsão (cache de 1h no servidor)
 
-type Situacao = 'normal' | 'atencao' | 'alerta' | 'emergencia';
 
 interface EstacaoAPI {
   codAna: string;
@@ -80,17 +79,6 @@ function situacaoConfig(s: Situacao) {
   return SITUACAO_CONFIG[s] ?? SITUACAO_CONFIG.normal;
 }
 
-function calcularSituacaoBacia(estacoes: EstacaoAPI[]): Situacao {
-  if (estacoes.some(e => e.situacao === 'emergencia')) return 'emergencia';
-  if (estacoes.some(e => e.situacao === 'alerta'))     return 'alerta';
-  if (estacoes.some(e => e.situacao === 'atencao'))    return 'atencao';
-  return 'normal';
-}
-
-function contarLocaisNaSituacao(estacoes: EstacaoAPI[], s: Situacao): number {
-  return estacoes.filter(e => e.situacao === s).length;
-}
-
 const BANNER_CONFIG = {
   normal:     { bg: 'bg-emerald-600', text: 'text-white', icon: '✓',  label: 'NORMAL',     mensagem: 'Todos os rios dentro dos limites normais' },
   atencao:    { bg: 'bg-amber-500',   text: 'text-white', icon: '⚠',  label: 'ATENÇÃO',    mensagem: 'Monitoramento intensificado em algumas estações' },
@@ -98,13 +86,8 @@ const BANNER_CONFIG = {
   emergencia: { bg: 'bg-red-600',     text: 'text-white', icon: '🚨', label: 'EMERGÊNCIA', mensagem: 'Situação crítica — evacue áreas de risco imediatamente' },
 } as const;
 
-function bannerFromSituacao(s: Situacao, count: number) {
-  const prefixo = s === 'normal'
-    ? 'Todos os rios dentro dos limites normais'
-    : `Pelo menos ${count} ${count === 1 ? 'local' : 'locais'} em ${
-        s === 'atencao' ? 'atenção' : s === 'alerta' ? 'alerta' : 'emergência'
-      }`;
-  return { ...BANNER_CONFIG[s], prefixo };
+function bannerFromSituacao(estacoes: EstacaoAPI[], s: Situacao) {
+  return { ...BANNER_CONFIG[s], prefixo: resumoBacia(estacoes, s) };
 }
 
 function formatNivel(nivelM: number | null): string {
@@ -125,7 +108,7 @@ function formatHora(iso: string | null): string {
 // ─── tipos alertas ──────────────────────────────────────────────────────────
 
 interface AlertaAPI {
-  id: number;
+  id: string;
   titulo: string;
   descricao: string;
   nivel: string;
@@ -219,7 +202,8 @@ export default function HomePage() {
       const res = await fetch('/api/alertas');
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json() as AlertaAPI[];
-      setAlertas(data.filter(a => a.ativo));
+      // A API já devolve só o que está ativo agora.
+      setAlertas(data);
     } catch {
       // silencioso — mantém lista vazia
     } finally {
@@ -254,9 +238,10 @@ export default function HomePage() {
     };
   }, [fetchEstacoes, fetchAlertas, fetchPrevisao]);
 
-  const situacaoBacia = loading || erro ? 'normal' : calcularSituacaoBacia(estacoes);
-  const countCriticos = loading || erro ? 0 : contarLocaisNaSituacao(estacoes, situacaoBacia);
-  const banner = bannerFromSituacao(situacaoBacia, countCriticos);
+  // Sem dado confiável a faixa não afirma nada sobre a bacia.
+  const estacoesBacia = loading || erro ? [] : estacoes;
+  const situacaoBacia = calcularSituacaoBacia(estacoesBacia);
+  const banner = bannerFromSituacao(estacoesBacia, situacaoBacia);
 
   return (
     <>
@@ -527,96 +512,82 @@ export default function HomePage() {
         </section>
 
         {/* ── Alertas — dados reais da API ──────────────────────────────── */}
-        <section id="alertas" className="py-14 bg-[#0A1420]">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
-              <div className="flex items-center gap-2">
-                <AlertTriangle size={18} className="text-amber-400" />
-                <h2 className="text-xl font-bold text-white">Alertas Ativos</h2>
-                {!loadingAlertas && alertas.length > 0 && (
-                  <span className="text-xs bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full font-semibold">
-                    {alertas.length}
-                  </span>
-                )}
-              </div>
-              <a
-                href="/alertas"
-                className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
-              >
-                Ver todos os alertas
-                <ChevronRight size={12} />
-              </a>
-            </div>
-
-            {/* Skeleton */}
-            {loadingAlertas && (
-              <div className="space-y-3">
-                {[1, 2].map(i => (
-                  <div key={i} className="bg-[#0d1a27] border border-[#1a2e42] rounded-lg p-4 animate-pulse h-16" />
-                ))}
-              </div>
-            )}
-
-            {/* Alertas reais */}
-            {!loadingAlertas && alertas.length > 0 && (
-              <div className="space-y-3">
-                {alertas.map((alerta) => {
-                  const cfg = nivelAlertaConfig(alerta.nivel);
-                  return (
-                    <motion.div
-                      key={alerta.id}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.35 }}
-                      className={`${cfg.bg} border ${cfg.border} rounded-lg p-4 flex items-start gap-3`}
-                    >
-                      <AlertTriangle size={18} className={`${cfg.icon} mt-0.5 shrink-0`} />
-                      <div className="flex-1 min-w-0">
-                        <div className={`font-semibold ${cfg.text} text-sm`}>{alerta.titulo}</div>
-                        <div className="text-[#8aabcc] text-xs mt-1 leading-relaxed">{alerta.descricao}</div>
-                        <div className="text-[#4a6a85] text-xs mt-2 flex items-center gap-3 flex-wrap">
-                          <span className="flex items-center gap-1">
-                            <MapPin size={9} />
-                            {alerta.cidade}
-                          </span>
-                          {alerta.nivelAgua && (
-                            <span className="flex items-center gap-1">
-                              <Waves size={9} />
-                              Nível: {alerta.nivelAgua}m
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <Clock size={9} />
-                            {new Date(alerta.criadoEm).toLocaleString('pt-BR', {
-                              day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
-                              timeZone: 'America/Sao_Paulo',
-                            })}
-                          </span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Sem alertas */}
-            {!loadingAlertas && alertas.length === 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.4 }}
-                className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-5"
-              >
-                <CheckCircle size={20} className="text-emerald-400 shrink-0" />
-                <div>
-                  <div className="font-semibold text-emerald-300 text-sm">Nenhum alerta ativo no momento</div>
-                  <div className="text-[#6b8fad] text-xs mt-1">Todos os rios monitorados estão dentro dos limites normais.</div>
+        {(loadingAlertas || alertas.length > 0) && (
+          <section id="alertas" className="py-14 bg-[#0A1420]">
+            <div className="container mx-auto px-4">
+              <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle size={18} className="text-amber-400" />
+                  <h2 className="text-xl font-bold text-white">Alertas Ativos</h2>
+                  {!loadingAlertas && alertas.length > 0 && (
+                    <span className="text-xs bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full font-semibold">
+                      {alertas.length}
+                    </span>
+                  )}
                 </div>
-              </motion.div>
-            )}
-          </div>
-        </section>
+                <a
+                  href="/alertas"
+                  className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+                >
+                  Ver todos os alertas
+                  <ChevronRight size={12} />
+                </a>
+              </div>
+
+              {/* Skeleton */}
+              {loadingAlertas && (
+                <div className="space-y-3">
+                  {[1, 2].map(i => (
+                    <div key={i} className="bg-[#0d1a27] border border-[#1a2e42] rounded-lg p-4 animate-pulse h-16" />
+                  ))}
+                </div>
+              )}
+
+              {/* Alertas reais */}
+              {!loadingAlertas && alertas.length > 0 && (
+                <div className="space-y-3">
+                  {alertas.map((alerta) => {
+                    const cfg = nivelAlertaConfig(alerta.nivel);
+                    return (
+                      <motion.div
+                        key={alerta.id}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.35 }}
+                        className={`${cfg.bg} border ${cfg.border} rounded-lg p-4 flex items-start gap-3`}
+                      >
+                        <AlertTriangle size={18} className={`${cfg.icon} mt-0.5 shrink-0`} />
+                        <div className="flex-1 min-w-0">
+                          <div className={`font-semibold ${cfg.text} text-sm`}>{alerta.titulo}</div>
+                          <div className="text-[#8aabcc] text-xs mt-1 leading-relaxed">{alerta.descricao}</div>
+                          <div className="text-[#4a6a85] text-xs mt-2 flex items-center gap-3 flex-wrap">
+                            <span className="flex items-center gap-1">
+                              <MapPin size={9} />
+                              {alerta.cidade}
+                            </span>
+                            {alerta.nivelAgua && (
+                              <span className="flex items-center gap-1">
+                                <Waves size={9} />
+                                Nível: {alerta.nivelAgua}m
+                              </span>
+                            )}
+                            <span className="flex items-center gap-1">
+                              <Clock size={9} />
+                              {new Date(alerta.criadoEm).toLocaleString('pt-BR', {
+                                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+                                timeZone: 'America/Sao_Paulo',
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* ── Previsão de Chuvas — dados reais Open-Meteo ───────────────── */}
         <section id="previsao" className="py-14 bg-[#0d1a27]">

@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   AlertTriangle,
   Bell,
-  CheckCircle,
   Clock,
   Waves,
   MapPin,
@@ -18,13 +17,14 @@ import { alertas as alertasContent } from 'virtual:content';
 import NotificacaoForm from '@/components/NotificacaoForm';
 
 const SITE = 'https://enchentesvaledocai.com.br';
+const POLL_INTERVAL = 5 * 60 * 1000; // 5 min — mesmo ritmo dos níveis na home
 
 // ─── types ──────────────────────────────────────────────────────────────────
 
 type NivelAlerta = 'atencao' | 'alerta' | 'emergencia';
 
-interface AlertaDB {
-  id: number;
+interface AlertaAtivo {
+  id: string;
   titulo: string;
   descricao: string;
   nivel: NivelAlerta;
@@ -35,6 +35,8 @@ interface AlertaDB {
   ativo: boolean;
   criadoEm: string;
   encerradoEm: string | null;
+  /** 'estacao' = derivado da leitura em tempo real; 'manual' = aviso cadastrado. */
+  origem: 'estacao' | 'manual';
 }
 
 interface OcorrenciaDB {
@@ -88,22 +90,31 @@ const JSON_LD = JSON.stringify({
 // ─── component ──────────────────────────────────────────────────────────────
 
 export default function AlertasPage() {
-  const [alertasAtivos, setAlertasAtivos] = useState<AlertaDB[]>([]);
+  const [alertasAtivos, setAlertasAtivos] = useState<AlertaAtivo[]>([]);
   const [ocorrencias, setOcorrencias] = useState<OcorrenciaDB[]>([]);
   const [loadingAlertas, setLoadingAlertas] = useState(true);
   const [loadingOcorrencias, setLoadingOcorrencias] = useState(true);
   const [expandedOcorrencia, setExpandedOcorrencia] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch('/api/alertas?ativo=true')
-      .then(r => r.json())
-      .then(data => { setAlertasAtivos(data); setLoadingAlertas(false); })
-      .catch(() => setLoadingAlertas(false));
+    // Os alertas vêm das leituras das estações, então precisam ser recarregados
+    // no mesmo ritmo do monitoramento — a página costuma ficar aberta.
+    const carregarAlertas = () => {
+      fetch('/api/alertas')
+        .then(r => r.json())
+        .then(data => { setAlertasAtivos(data); setLoadingAlertas(false); })
+        .catch(() => setLoadingAlertas(false));
+    };
+
+    carregarAlertas();
+    const timer = setInterval(carregarAlertas, POLL_INTERVAL);
 
     fetch('/api/ocorrencias')
       .then(r => r.json())
       .then(data => { setOcorrencias(data); setLoadingOcorrencias(false); })
       .catch(() => setLoadingOcorrencias(false));
+
+    return () => clearInterval(timer);
   }, []);
 
   return (
@@ -138,84 +149,74 @@ export default function AlertasPage() {
         <section className="bg-[#0d1a27] py-10">
           <div className="container mx-auto px-4 flex flex-col gap-8">
 
-            {/* ── Alertas ativos ───────────────────────────────────────── */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Bell size={16} className="text-amber-400" />
-                <h2 className="text-lg font-bold text-white">Alertas Ativos</h2>
-                {!loadingAlertas && (
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${alertasAtivos.length > 0 ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}`}>
-                    {alertasAtivos.length > 0 ? `${alertasAtivos.length} ativo${alertasAtivos.length > 1 ? 's' : ''}` : 'Nenhum'}
-                  </span>
-                )}
-              </div>
-
-              {loadingAlertas ? (
-                <div className="flex items-center gap-2 text-[#6b8fad] py-6">
-                  <Loader2 size={16} className="animate-spin" />
-                  <span className="text-sm">Carregando alertas...</span>
+            {/* ── Alertas ativos — a seção só aparece quando há alerta ativo ─ */}
+            {(loadingAlertas || alertasAtivos.length > 0) && (
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Bell size={16} className="text-amber-400" />
+                  <h2 className="text-lg font-bold text-white">Alertas Ativos</h2>
+                  {!loadingAlertas && (
+                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-amber-500/20 text-amber-400">
+                      {alertasAtivos.length} ativo{alertasAtivos.length > 1 ? 's' : ''}
+                    </span>
+                  )}
                 </div>
-              ) : alertasAtivos.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-5"
-                >
-                  <CheckCircle size={20} className="text-emerald-400 shrink-0" />
-                  <div>
-                    <div className="font-semibold text-emerald-300 text-sm">Nenhum alerta ativo no momento</div>
-                    <div className="text-[#6b8fad] text-xs mt-0.5">Todos os rios monitorados estão dentro dos limites normais.</div>
+
+                {loadingAlertas ? (
+                  <div className="flex items-center gap-2 text-[#6b8fad] py-6">
+                    <Loader2 size={16} className="animate-spin" />
+                    <span className="text-sm">Carregando alertas...</span>
                   </div>
-                </motion.div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {alertasAtivos.map((alerta, i) => {
-                    const cfg = nivelConfig(alerta.nivel);
-                    return (
-                      <motion.div
-                        key={alerta.id}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.07 }}
-                        className={`${cfg.bg} border ${cfg.border} rounded-xl p-5`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <span className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${cfg.dot} animate-pulse`} />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-wrap items-center gap-2 mb-1">
-                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text} border ${cfg.border}`}>
-                                {cfg.label}
-                              </span>
-                              <span className="text-xs text-[#6b8fad] flex items-center gap-1">
-                                <MapPin size={10} />
-                                {alerta.cidade} — {alerta.rio}
-                              </span>
-                            </div>
-                            <h3 className={`font-bold text-sm mb-1 ${cfg.text}`}>{alerta.titulo}</h3>
-                            <p className="text-[#8aabcc] text-xs leading-relaxed mb-2">{alerta.descricao}</p>
-                            <div className="flex flex-wrap gap-4 text-[10px] text-[#4a6a85]">
-                              {alerta.nivelAgua && (
-                                <span className="flex items-center gap-1">
-                                  <Droplets size={10} />
-                                  Nível atual: <span className="font-semibold text-white">{alerta.nivelAgua}m</span>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {alertasAtivos.map((alerta, i) => {
+                      const cfg = nivelConfig(alerta.nivel);
+                      return (
+                        <motion.div
+                          key={alerta.id}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.07 }}
+                          className={`${cfg.bg} border ${cfg.border} rounded-xl p-5`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <span className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${cfg.dot} animate-pulse`} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2 mb-1">
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text} border ${cfg.border}`}>
+                                  {cfg.label}
                                 </span>
-                              )}
-                              {alerta.cotaReferencia && (
-                                <span>Cota de referência: <span className="font-semibold">{alerta.cotaReferencia}m</span></span>
-                              )}
-                              <span className="flex items-center gap-1">
-                                <Clock size={10} />
-                                {formatDateTime(alerta.criadoEm)}
-                              </span>
+                                <span className="text-xs text-[#6b8fad] flex items-center gap-1">
+                                  <MapPin size={10} />
+                                  {alerta.cidade} — {alerta.rio}
+                                </span>
+                              </div>
+                              <h3 className={`font-bold text-sm mb-1 ${cfg.text}`}>{alerta.titulo}</h3>
+                              <p className="text-[#8aabcc] text-xs leading-relaxed mb-2">{alerta.descricao}</p>
+                              <div className="flex flex-wrap gap-4 text-[10px] text-[#4a6a85]">
+                                {alerta.nivelAgua && (
+                                  <span className="flex items-center gap-1">
+                                    <Droplets size={10} />
+                                    Nível atual: <span className="font-semibold text-white">{alerta.nivelAgua}m</span>
+                                  </span>
+                                )}
+                                {alerta.cotaReferencia && (
+                                  <span>Cota de referência: <span className="font-semibold">{alerta.cotaReferencia}m</span></span>
+                                )}
+                                <span className="flex items-center gap-1">
+                                  <Clock size={10} />
+                                  {formatDateTime(alerta.criadoEm)}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* ── Histórico de ocorrências ─────────────────────────────── */}
             <div>
