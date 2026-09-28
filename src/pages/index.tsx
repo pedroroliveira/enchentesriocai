@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Wifi,
   WifiOff,
+  LineChart,
 } from 'lucide-react';
 import { home } from 'virtual:content';
 import NotificacaoForm from '@/components/NotificacaoForm';
@@ -467,7 +468,17 @@ export default function HomePage() {
                         ) : (
                           <span />
                         )}
-                        <StationLocationLink lat={est.lat} lng={est.lng} compact />
+                        <div className="flex items-center gap-3">
+                          <a
+                            href={`/mapa?estacao=${est.codAna}`}
+                            className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors"
+                            aria-label={`Ver gráfico de nível de ${est.nomeExibicao}`}
+                          >
+                            <LineChart size={11} />
+                            Ver gráfico
+                          </a>
+                          <StationLocationLink lat={est.lat} lng={est.lng} compact />
+                        </div>
                       </div>
                     </motion.div>
                   );

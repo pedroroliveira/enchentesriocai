@@ -1,5 +1,6 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   MapPin,
@@ -15,9 +16,11 @@ import {
   RefreshCw,
   Wifi,
   WifiOff,
+  LineChart,
 } from 'lucide-react';
 import { mapa } from 'virtual:content';
 import StationLocationLink from '@/components/StationLocationLink';
+import GraficoNivel from '@/components/GraficoNivel';
 
 const SITE = 'https://enchentesvaledocai.com.br';
 const POLL_INTERVAL = 5 * 60 * 1000; // 5 minutos
@@ -155,6 +158,10 @@ const FONTE_LEITURA_CONFIG = {
   indisponivel: { label: 'Indisponível',   className: 'text-[#6b8fad] bg-[#1a2e42] border-[#294667]' },
 } as const;
 
+function rolarParaGrafico() {
+  document.getElementById('grafico')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function fonteLeituraConfig(fonte: string) {
   if (fonte === 'DCRS') return FONTE_LEITURA_CONFIG.DCRS;
   if (fonte === 'ANA') return FONTE_LEITURA_CONFIG.ANA;
@@ -182,6 +189,9 @@ export default function MapaPage() {
   const [selected, setSelected] = useState<EstacaoAPI | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [atualizando, setAtualizando] = useState(false);
+  const [searchParams] = useSearchParams();
+  const estacaoDaUrl = useRef(searchParams.get('estacao'));
+  const [rolarAoSelecionar, setRolarAoSelecionar] = useState(false);
 
   const fetchEstacoes = useCallback(async (manual = false) => {
     if (manual) setAtualizando(true);
@@ -210,6 +220,25 @@ export default function MapaPage() {
     const timer = setInterval(() => void fetchEstacoes(), POLL_INTERVAL);
     return () => clearInterval(timer);
   }, [fetchEstacoes]);
+
+  // Link vindo dos cards da home (/mapa?estacao=<cod>): seleciona a estação
+  // assim que a lista chega e rola até o gráfico.
+  useEffect(() => {
+    const cod = estacaoDaUrl.current;
+    if (!cod || estacoes.length === 0) return;
+    estacaoDaUrl.current = null;
+    const est = estacoes.find(e => e.codAna === cod);
+    if (!est) return;
+    setSelected(est);
+    setRolarAoSelecionar(true);
+  }, [estacoes]);
+
+  // Roda depois do commit, quando o bloco #grafico já está no DOM.
+  useEffect(() => {
+    if (!rolarAoSelecionar || !selected) return;
+    setRolarAoSelecionar(false);
+    rolarParaGrafico();
+  }, [rolarAoSelecionar, selected]);
 
   const estacoesEmAlerta = useMemo(
     () => estacoes.filter(e => e.situacao !== 'normal'),
@@ -532,6 +561,14 @@ export default function MapaPage() {
                           </span>
                         </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={rolarParaGrafico}
+                        className="mt-3 w-full flex items-center justify-center gap-2 text-xs font-semibold text-white bg-primary/15 border border-primary/40 hover:bg-primary/25 rounded-lg px-3 py-2 transition-colors"
+                      >
+                        <LineChart size={14} />
+                        Ver gráfico de nível e projeção
+                      </button>
                       <div className="flex items-center justify-between gap-2 mt-2">
                         <StationLocationLink lat={selected.lat} lng={selected.lng} />
                         <div className="text-[10px] text-[#3a5a75] text-right">
@@ -672,6 +709,13 @@ export default function MapaPage() {
                 </div>
               </div>
             </div>
+
+            {/* Gráfico de nível da estação selecionada */}
+            {selected && (
+              <div id="grafico" className="mt-6 scroll-mt-20">
+                <GraficoNivel codAna={selected.codAna} versao={atualizadoEm} />
+              </div>
+            )}
           </div>
         </section>
 

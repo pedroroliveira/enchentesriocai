@@ -56,7 +56,17 @@ export interface LeituraEstacao {
 
 // ─── Parser XML da ANA ──────────────────────────────────────────────────────
 
-function parseAnaXml(xml: string): Array<{ dataHora: Date; nivelCm: number }> {
+/**
+ * A ANA publica `DataHora` no horário de Brasília, sem indicar o fuso
+ * (ex.: "2026-09-28 16:45:00"). O fuso precisa ser explícito: interpretada
+ * no fuso do servidor (UTC), a leitura ficaria 3 horas mais antiga do que é.
+ * Brasília não tem horário de verão desde 2019, então o offset é fixo.
+ */
+export function parseDataHoraAna(texto: string): Date {
+  return new Date(`${texto.trim().replace(' ', 'T')}-03:00`);
+}
+
+export function parseAnaXml(xml: string): Array<{ dataHora: Date; nivelCm: number }> {
   if (xml.includes('<Error>')) return [];
   const blocos = xml.split(/<DadosHidrometere[oo]logicos[^>]*>/).slice(1);
   const resultados: Array<{ dataHora: Date; nivelCm: number }> = [];
@@ -69,7 +79,7 @@ function parseAnaXml(xml: string): Array<{ dataHora: Date; nivelCm: number }> {
     if (!nivelStr) continue;
     const nivel = parseFloat(nivelStr.replace(',', '.'));
     if (isNaN(nivel) || nivel <= 0) continue;
-    const data = new Date(dataMatch[1].trim().replace(' ', 'T').trimEnd());
+    const data = parseDataHoraAna(dataMatch[1]);
     if (isNaN(data.getTime())) continue;
     resultados.push({ dataHora: data, nivelCm: nivel });
   }
@@ -154,6 +164,31 @@ async function salvarLeitura(
     dataHora,
     fonte,
   });
+}
+
+/**
+ * Grava todas as leituras da ANA mais recentes que a última já salva. A ANA
+ * devolve dias de histórico por consulta; salvar só a última deixaria
+ * lacunas sempre que o site ficasse um tempo sem acessos.
+ */
+async function salvarLeiturasAna(
+  codAna: string,
+  lista: Array<{ dataHora: Date; nivelCm: number }>,
+): Promise<void> {
+  const corte = (await buscarUltimaLeitura(codAna))?.dataHora ?? new Date(0);
+  const novas = lista.filter(l => l.dataHora > corte);
+  if (novas.length === 0) return;
+
+  await db.insert(leituras).values(novas.map(l => {
+    const nivelM = l.nivelCm / 100;
+    return {
+      codAna,
+      nivelCm: String(Math.round(nivelM * 100 * 100) / 100),
+      nivelM:  String(nivelM.toFixed(3)),
+      dataHora: l.dataHora,
+      fonte: 'ANA',
+    };
+  }));
 }
 
 async function buscarUltimaLeitura(codAna: string): Promise<LeituraCache | null> {
@@ -289,10 +324,7 @@ async function atualizarComAna(
   await Promise.allSettled(
     semDcrs.map(async (est) => {
       try {
-        const novas = await fetchAna(est.codAna);
-        if (novas.length === 0) return;
-        const ultima = novas[novas.length - 1];
-        await salvarLeitura(est.codAna, ultima.nivelCm / 100, ultima.dataHora, 'ANA');
+        await salvarLeiturasAna(est.codAna, await fetchAna(est.codAna));
       } catch {
         // Falha silenciosa — usa cache do banco
       }
@@ -310,10 +342,7 @@ async function atualizarDados(estacoesDB: typeof estacoes.$inferSelect[]): Promi
     await Promise.allSettled(
       estacoesDB.map(async (est) => {
         try {
-          const novas = await fetchAna(est.codAna);
-          if (novas.length === 0) return;
-          const ultima = novas[novas.length - 1];
-          await salvarLeitura(est.codAna, ultima.nivelCm / 100, ultima.dataHora, 'ANA');
+          await salvarLeiturasAna(est.codAna, await fetchAna(est.codAna));
         } catch { /* silencioso */ }
       })
     );
@@ -436,4 +465,56 @@ export async function getEstacoes(): Promise<LeituraEstacao[]> {
   });
 
   return resultado;
+}
+
+// ─── Histórico para o gráfico ────────────────────────────────────────────────
+
+export const HORAS_HISTORICO_PERMITIDAS = [24, 48, 168] as const;
+export type HorasHistorico = typeof HORAS_HISTORICO_PERMITIDAS[number];
+
+export interface HistoricoEstacao {
+  codAna:         string;
+  nomeExibicao:   string;
+  cotaAtencao:    number | null;
+  cotaAlerta:     number | null;
+  cotaEmergencia: number | null;
+  leituras:       Array<{ dataHora: string; nivelM: number }>;
+}
+
+/**
+ * Leituras gravadas de uma estação ativa nas últimas `horas`, já com o
+ * redutor de telemetria descontado (mesma regra do card). `null` quando a
+ * estação não existe ou está inativa.
+ */
+export async function getHistoricoEstacao(
+  codAna: string,
+  horas: HorasHistorico,
+): Promise<HistoricoEstacao | null> {
+  const [est] = await db
+    .select()
+    .from(estacoes)
+    .where(and(eq(estacoes.codAna, codAna), eq(estacoes.ativo, true)))
+    .limit(1);
+  if (!est) return null;
+
+  const corte = new Date(Date.now() - horas * 60 * 60 * 1000);
+  const rows = await db
+    .select({ dataHora: leituras.dataHora, nivelM: leituras.nivelM, fonte: leituras.fonte })
+    .from(leituras)
+    .where(and(eq(leituras.codAna, codAna), gte(leituras.dataHora, corte)))
+    .orderBy(asc(leituras.dataHora));
+
+  return {
+    codAna:         est.codAna,
+    nomeExibicao:   est.nomeExibicao,
+    cotaAtencao:    est.cotaAtencao    ? Number(est.cotaAtencao)    : null,
+    cotaAlerta:     est.cotaAlerta     ? Number(est.cotaAlerta)     : null,
+    cotaEmergencia: est.cotaEmergencia ? Number(est.cotaEmergencia) : null,
+    leituras: rows
+      .filter(r => r.nivelM !== null)
+      .map(r => ({
+        dataHora: r.dataHora!.toISOString(),
+        nivelM:   aplicarRedutorTelemetria(Number(r.nivelM), est.redutorTelemetria, r.fonte ?? 'ANA'),
+      })),
+  };
 }
