@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Map, Layers, RefreshCw, ExternalLink, Droplets, Wind, Thermometer, Cloud } from 'lucide-react';
 
-// Coordenadas do Vale do Caí
-const LAT = -29.58;
-const LON = -51.37;
-const ZOOM = 8;
+// Centralizado em Montenegro, RS — zoom 6 mostra a maior parte do estado
+const LAT = -29.69;
+const LON = -51.46;
+const ZOOM = 6;
 
 // Camadas disponíveis
 type CamadaId = 'chuva' | 'nuvens' | 'temperatura' | 'vento';
@@ -173,7 +173,7 @@ export default function MapaMeteoro() {
       <div className="px-5 py-3 border-t border-[#1a2e42] bg-[#0d1a27] flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-4">
           <span className="text-[10px] text-[#4a6a85]">
-            Região: Vale do Caí, RS ({LAT}°, {LON}°)
+            Região: Rio Grande do Sul (centro em Montenegro)
           </span>
           <span className="text-[10px] text-[#4a6a85]">
             {camada.descricao} · Modelo ECMWF
