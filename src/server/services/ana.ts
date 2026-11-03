@@ -5,15 +5,20 @@
  * Fonte fallback:  ANA HidroWeb — XML (lento, 15s+, dados históricos)
  *
  * Estratégia:
- *  1. Tenta buscar dados da Defesa Civil RS para todas as estações com cod_dcrs
- *  2. Para estações sem cod_dcrs (ou se a DC falhar), usa ANA como fallback
+ *  1. Estações com cod_dcrs usam somente a Defesa Civil RS
+ *  2. Estações sem cod_dcrs usam somente a ANA
  *  3. Salva leituras no banco com fonte='DCRS' ou 'ANA'
+ *
+ * As duas redes medem em réguas diferentes (em Picada Café a ANA marca ~3 m a
+ * mais que a DC) e as cotas de cada estação seguem a régua da sua fonte. Se a
+ * DC cair, o card fica com a última leitura DC em vez de cair para a ANA —
+ * misturar as fontes disparou emergências falsas em out/2026.
  *  4. Cache em memória de 2 minutos (DC é rápida, podemos atualizar mais frequente)
  */
 
 import { db } from '../db/client.js';
 import { leituras, estacoes } from '../db/schema.js';
-import { eq, asc, desc, and, gte, inArray, sql } from 'drizzle-orm';
+import { eq, asc, desc, and, gte, or, sql } from 'drizzle-orm';
 import { fetchEstacoesDefesaCivil, type DcrsLeitura } from './defesacivil.js';
 import { aplicarRedutorTelemetria, metrosParaCentimetros } from './nivel.js';
 
@@ -131,6 +136,18 @@ function calcTendenciaFromHistorico(
   return 'estavel';
 }
 
+type EstacaoDB = typeof estacoes.$inferSelect;
+
+/** Fonte cujas leituras valem para a estação (ver cabeçalho do arquivo). */
+export function fonteDaEstacao(est: { codDcrs: string | null }): 'DCRS' | 'ANA' {
+  return est.codDcrs ? 'DCRS' : 'ANA';
+}
+
+/** Condição SQL: leituras de cada estação, apenas da fonte daquela estação. */
+function leiturasDaFonte(lista: EstacaoDB[]) {
+  return or(...lista.map(e => and(eq(leituras.codAna, e.codAna), eq(leituras.fonte, fonteDaEstacao(e)))));
+}
+
 interface LeituraCache {
   nivelCm:  number;
   nivelM:   number;
@@ -154,7 +171,7 @@ async function salvarLeitura(
   // Evita duplicatas: só insere se mais recente que a última salva
   const corte = ultimaConhecida !== undefined
     ? (ultimaConhecida ?? new Date(0))
-    : (await buscarUltimaLeitura(codAna))?.dataHora ?? new Date(0);
+    : (await buscarUltimaLeitura(codAna, fonte))?.dataHora ?? new Date(0);
   if (dataHora <= corte) return;
 
   await db.insert(leituras).values({
@@ -175,7 +192,7 @@ async function salvarLeiturasAna(
   codAna: string,
   lista: Array<{ dataHora: Date; nivelCm: number }>,
 ): Promise<void> {
-  const corte = (await buscarUltimaLeitura(codAna))?.dataHora ?? new Date(0);
+  const corte = (await buscarUltimaLeitura(codAna, 'ANA'))?.dataHora ?? new Date(0);
   const novas = lista.filter(l => l.dataHora > corte);
   if (novas.length === 0) return;
 
@@ -191,11 +208,11 @@ async function salvarLeiturasAna(
   }));
 }
 
-async function buscarUltimaLeitura(codAna: string): Promise<LeituraCache | null> {
+async function buscarUltimaLeitura(codAna: string, fonte: string): Promise<LeituraCache | null> {
   const rows = await db
     .select()
     .from(leituras)
-    .where(eq(leituras.codAna, codAna))
+    .where(and(eq(leituras.codAna, codAna), eq(leituras.fonte, fonte)))
     .orderBy(desc(leituras.dataHora))
     .limit(1);
 
@@ -212,9 +229,9 @@ async function buscarUltimaLeitura(codAna: string): Promise<LeituraCache | null>
  * Última leitura de cada estação em uma única query. `DISTINCT ON` percorre o
  * índice (cod_ana, data_hora) uma vez, substituindo um SELECT por estação.
  */
-async function buscarUltimasLeituras(codigos: string[]): Promise<Map<string, LeituraCache>> {
+async function buscarUltimasLeituras(lista: EstacaoDB[]): Promise<Map<string, LeituraCache>> {
   const mapa = new Map<string, LeituraCache>();
-  if (codigos.length === 0) return mapa;
+  if (lista.length === 0) return mapa;
 
   const { rows } = await db.execute<{
     cod_ana:   string;
@@ -230,7 +247,7 @@ async function buscarUltimasLeituras(codigos: string[]): Promise<Map<string, Lei
       ${leituras.dataHora} as data_hora,
       ${leituras.fonte}    as fonte
     from ${leituras}
-    where ${inArray(leituras.codAna, codigos)}
+    where ${leiturasDaFonte(lista)}
     order by ${leituras.codAna}, ${leituras.dataHora} desc
   `);
 
@@ -250,16 +267,16 @@ async function buscarUltimasLeituras(codigos: string[]): Promise<Map<string, Lei
  * código. Substitui um SELECT por estação no caminho de leitura.
  */
 async function buscarLeiturasTendencia(
-  codigos: string[],
+  lista: EstacaoDB[],
 ): Promise<Map<string, Array<{ dataHora: Date; nivelCm: number }>>> {
   const mapa = new Map<string, Array<{ dataHora: Date; nivelCm: number }>>();
-  if (codigos.length === 0) return mapa;
+  if (lista.length === 0) return mapa;
 
   const corte = new Date(Date.now() - 86400000 * 2);
   const rows = await db
     .select({ codAna: leituras.codAna, dataHora: leituras.dataHora, nivelCm: leituras.nivelCm })
     .from(leituras)
-    .where(and(inArray(leituras.codAna, codigos), gte(leituras.dataHora, corte)))
+    .where(and(leiturasDaFonte(lista), gte(leituras.dataHora, corte)))
     .orderBy(leituras.codAna, leituras.dataHora);
 
   for (const r of rows) {
@@ -301,7 +318,7 @@ async function atualizarComDefesaCivil(
   // Salva leituras no banco para cada estação com cod_dcrs. As datas das
   // últimas leituras vêm em uma query só, em vez de um SELECT por estação.
   const comDcrs = estacoesDB.filter(e => e.codDcrs);
-  const ultimas = await buscarUltimasLeituras(comDcrs.map(e => e.codAna));
+  const ultimas = await buscarUltimasLeituras(comDcrs);
 
   await Promise.allSettled(
     comDcrs.map(async (est) => {
@@ -313,7 +330,7 @@ async function atualizarComDefesaCivil(
   );
 }
 
-// ─── Atualização via ANA (fallback para estações sem cod_dcrs) ───────────────
+// ─── Atualização via ANA (estações sem cod_dcrs) ─────────────────────────────
 
 async function atualizarComAna(
   estacoesDB: typeof estacoes.$inferSelect[],
@@ -333,19 +350,12 @@ async function atualizarComAna(
 }
 
 async function atualizarDados(estacoesDB: typeof estacoes.$inferSelect[]): Promise<void> {
-  // Tenta Defesa Civil primeiro (rápido)
+  // Sem fallback para a ANA: a régua dela é outra (ver cabeçalho). Se a DC
+  // falhar, as estações DC mantêm a última leitura DC.
   try {
     await atualizarComDefesaCivil(estacoesDB);
   } catch (err) {
-    console.warn('[estacoes] Defesa Civil falhou, usando ANA como fallback:', err instanceof Error ? err.message : String(err));
-    // Se DC falhar completamente, tenta ANA para todas
-    await Promise.allSettled(
-      estacoesDB.map(async (est) => {
-        try {
-          await salvarLeiturasAna(est.codAna, await fetchAna(est.codAna));
-        } catch { /* silencioso */ }
-      })
-    );
+    console.warn('[estacoes] Defesa Civil falhou:', err instanceof Error ? err.message : String(err));
   }
 
   // Estações sem cod_dcrs sempre usam ANA
@@ -391,10 +401,9 @@ export async function getEstacoes(): Promise<LeituraEstacao[]> {
 
   // Monta resposta. As duas consultas ao histórico são feitas em lote para
   // todas as estações — antes eram 2 queries por estação a cada requisição.
-  const codigos = estacoesDB.map(e => e.codAna);
   const [ultimasLeituras, historicos] = await Promise.all([
-    buscarUltimasLeituras(codigos),
-    buscarLeiturasTendencia(codigos),
+    buscarUltimasLeituras(estacoesDB),
+    buscarLeiturasTendencia(estacoesDB),
   ]);
 
   const resultado: LeituraEstacao[] = estacoesDB.map((est) => {
@@ -501,7 +510,11 @@ export async function getHistoricoEstacao(
   const rows = await db
     .select({ dataHora: leituras.dataHora, nivelM: leituras.nivelM, fonte: leituras.fonte })
     .from(leituras)
-    .where(and(eq(leituras.codAna, codAna), gte(leituras.dataHora, corte)))
+    .where(and(
+      eq(leituras.codAna, codAna),
+      eq(leituras.fonte, fonteDaEstacao(est)),
+      gte(leituras.dataHora, corte),
+    ))
     .orderBy(asc(leituras.dataHora));
 
   return {

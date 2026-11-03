@@ -12,7 +12,6 @@
  */
 
 const GRAPHQL_URL = 'https://redehidrometeorologica.defesacivil.rs.gov.br/graphql';
-const CLIENT      = 'casa-militar-defesa-civil-rs';
 const TIMEOUT_MS  = 12000;
 
 // ─── Tipos ──────────────────────────────────────────────────────────────────
@@ -45,7 +44,7 @@ export interface DcrsLeitura {
   ventoDir:   number | null;
   /** Sensação térmica em °C */
   sensTerm:   number | null;
-  /** Timestamp da leitura */
+  /** Timestamp da leitura (ISO em UTC) */
   timestamp:  string | null;
   /** Indica se a estação tem sensor de nível */
   temNivel:   boolean;
@@ -54,49 +53,285 @@ export interface DcrsLeitura {
 }
 
 // ─── Query GraphQL ───────────────────────────────────────────────────────────
+// Desde 14/10/2026 a API só aceita o texto exato das consultas do guia oficial
+// ("Tags_data" ou "Historic"); qualquer outra volta HTTP 400 QUERY_NOT_ALLOWED.
+// O texto abaixo é o mesmo que o próprio site da rede envia — não editar
+// campos nem acrescentar filtros (o servidor só ignora diferenças de espaço).
+// Ela devolve todas as estações do estado; as do Caí são filtradas no cliente.
 
-const QUERY_ESTACOES_CAI = `
-query Tags_data {
-  tags_data(
-    station: ["DCRS-00075","DCRS-00046","DCRS-00085","DCRS-00069","DCRS-00012","DCRS-00031"]
-    clients: ["${CLIENT}"]
-  ) {
-    qualle_meteorologia {
-      codigo
-      timestamp
-      name { general local }
-      position { bacia latitude longitude }
-      data {
-        rio {
-          rio_nivel { value }
-          rio_nivel_tendencia { value }
+const QUERY_TAGS_DATA = `
+  query Tags_data {
+    tags_data(clients: ["casa-militar-defesa-civil-rs"]) {
+         qualle_meteorologia {
+            codigo
+            name {
+                prefix
+                general
+                local
+            }
+            show
+            timestamp
+            position {
+                bacia
+                latitude
+                longitude
+                regiao
+                altitude
+                filtros {
+                    outros {
+                        crepdec {
+                            nome {
+                                value
+                            }
+                            codigo {
+                                value
+                            }
+                        }
+                    }
+                }
+            }
+            data {
+                rio {
+                    rio_alarmes {
+                        inundacao {
+                            ativo {
+                                value
+                            }
+                            status {
+                                value
+                            }
+                        }
+                    }
+                    rio_nome {
+                        value
+                    }
+                    rio_nivel {
+                        value
+                    }
+                    rio_nivel_tendencia {
+                        value
+                    }
+                    rio_area_drenagem {
+                        value
+                    }
+                    homologacao {
+                        relacao {
+                            valido {
+                                value
+                            }
+                        }
+                    }
+                }
+                chuva {
+                    acumulado {
+                        min005 {
+                            value
+                        }
+                        h001 {
+                            value
+                        }
+                        h003 {
+                            value
+                        }
+                        h006 {
+                            value
+                        }
+                        h012 {
+                            value
+                        }
+                        h024 {
+                            value
+                        }
+                        h048 {
+                            value
+                        }
+                        h168 {
+                            value
+                        }
+                    }
+                    homologacao {
+                        relacao {
+                            valido {
+                                value
+                            }
+                        }
+                    }
+                }
+                pressaoatmos {
+                    atual {
+                        value
+                    }
+                    historico {
+                        diaanterior {
+                            media {
+                                value
+                            }
+                        }
+                        diaatual {
+                            media {
+                                value
+                            }
+                        }
+                    }
+                    tendencia {
+                        value
+                    }
+                    homologacao {
+                        relacao {
+                            valido {
+                                value
+                            }
+                        }
+                    }
+                }
+                senstermica {
+                    atual {
+                        value
+                    }
+                    historico {
+                        diaatual {
+                            media {
+                                value
+                            }
+                        }
+                        diaanterior {
+                            media {
+                                value
+                            }
+                        }
+                    }
+                    tendencia {
+                        value
+                    }
+                    homologacao {
+                        relacao {
+                            valido {
+                                value
+                            }
+                        }
+                    }
+                }
+                radiacaosolar {
+                    atual {
+                        value
+                    }
+                    homologacao {
+                        relacao {
+                            valido {
+                                value
+                            }
+                        }
+                    }
+                }
+                temperatura {
+                    atual {
+                        value
+                    }
+                    historico {
+                        diaanterior {
+                            media {
+                                value
+                            }
+                        }
+                        diaatual {
+                            media {
+                                value
+                            }
+                            maxima {
+                                value
+                            }
+                            minima {
+                                value
+                            }
+                        }
+                    }
+                    tendencia {
+                        value
+                    }
+                    homologacao {
+                        relacao {
+                            valido {
+                                value
+                            }
+                        }
+                    }
+                }
+                umidade {
+                    atual {
+                        value
+                    }
+                    historico {
+                        diaanterior {
+                            media {
+                                value
+                            }
+                        }
+                        diaatual {
+                            media {
+                                value
+                            }
+                        }
+                    }
+                    tendencia {
+                        value
+                    }
+                    homologacao {
+                        relacao {
+                            valido {
+                                value
+                            }
+                        }
+                    }
+                }
+                vento {
+                    direcao {
+                        value
+                    }
+                    velocidade_maxima {
+                        value
+                    }
+                    velocidade_media {
+                        value
+                    }
+                    homologacao {
+                        relacao {
+                            valido {
+                                value
+                            }
+                        }
+                    }
+                }
+            }
+            type
+            filter {
+                relacao {
+                    tem_chuva_acumulada
+                    tem_nivel_do_rio
+                    tem_pressao_atmosferica
+                    tem_sensacao_termica
+                    tem_umidade
+                    tem_vazao_do_rio
+                    tem_vento
+                }
+            }
+            resource {
+                estacao {
+                    estado {
+                        manutencao {
+                            value
+                        }
+                    }
+                }
+            }
         }
-        chuva {
-          acumulado {
-            h001 { value }
-            h024 { value }
-            h168 { value }
-          }
-        }
-        temperatura { atual { value } }
-        umidade { atual { value } }
-        pressaoatmos { atual { value } }
-        vento {
-          velocidade_media { value }
-          direcao { value }
-        }
-        senstermica { atual { value } }
-      }
-      filter {
-        relacao {
-          tem_nivel_do_rio
-          tem_chuva_acumulada
-        }
-      }
+        proximaAtualizacaoEm
     }
   }
-}
 `;
+
+const ESTACOES_CAI = new Set([
+  'DCRS-00075', 'DCRS-00046', 'DCRS-00085', 'DCRS-00069', 'DCRS-00012', 'DCRS-00031',
+]);
 
 // ─── Normalização de nível ───────────────────────────────────────────────────
 // A API retorna unidades inconsistentes por estação:
@@ -116,6 +351,21 @@ function normalizarNivelParaMetros(codDcrs: string, valor: number | null): numbe
   return Math.round(valor * 1000) / 1000; // já em metros
 }
 
+// ─── Timestamp ───────────────────────────────────────────────────────────────
+
+/**
+ * A API passou a devolver `timestamp` no horário de Brasília sem fuso
+ * (ex.: "2026-11-03T20:25:00.000"). Lido no fuso do servidor (UTC), a leitura
+ * ficaria 3 horas no passado — mesmo problema já tratado nas datas da ANA.
+ * Valores que já trazem `Z` ou offset são respeitados.
+ */
+export function parseTimestampDcrs(texto: string): Date | null {
+  const t = texto.trim();
+  const temFuso = /(Z|[+-]\d{2}:?\d{2})$/i.test(t);
+  const data = new Date(temFuso ? t : `${t}-03:00`);
+  return isNaN(data.getTime()) ? null : data;
+}
+
 // ─── Fetch principal ─────────────────────────────────────────────────────────
 
 export async function fetchEstacoesDefesaCivil(): Promise<DcrsLeitura[]> {
@@ -127,7 +377,7 @@ export async function fetchEstacoesDefesaCivil(): Promise<DcrsLeitura[]> {
     resp = await fetch(GRAPHQL_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: QUERY_ESTACOES_CAI }),
+      body: JSON.stringify({ query: QUERY_TAGS_DATA }),
       signal: controller.signal,
     });
   } finally {
@@ -166,7 +416,7 @@ export async function fetchEstacoesDefesaCivil(): Promise<DcrsLeitura[]> {
 
   const estacoes = json.data?.tags_data?.qualle_meteorologia ?? [];
 
-  return estacoes.map((e) => {
+  return estacoes.filter((e) => ESTACOES_CAI.has(e.codigo)).map((e) => {
     const nivelRaw = e.data.rio?.rio_nivel?.value ?? null;
     return {
       codDcrs:      e.codigo,
@@ -185,7 +435,7 @@ export async function fetchEstacoesDefesaCivil(): Promise<DcrsLeitura[]> {
       ventoVel:     e.data.vento?.velocidade_media?.value ?? null,
       ventoDir:     e.data.vento?.direcao?.value ?? null,
       sensTerm:     e.data.senstermica?.atual?.value ?? null,
-      timestamp:    e.timestamp ?? null,
+      timestamp:    e.timestamp ? parseTimestampDcrs(e.timestamp)?.toISOString() ?? null : null,
       temNivel:     e.filter.relacao.tem_nivel_do_rio,
       temChuva:     e.filter.relacao.tem_chuva_acumulada,
     };

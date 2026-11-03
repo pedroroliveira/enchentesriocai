@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('../db/client.js', () => ({ db: {} }));
 
-const { parseAnaXml, parseDataHoraAna } = await import('./ana.js');
+const { fonteDaEstacao, parseAnaXml, parseDataHoraAna } = await import('./ana.js');
 
 describe('parseDataHoraAna', () => {
   it('interpreta a hora da ANA como horário de Brasília, independente do fuso do servidor', () => {
@@ -27,5 +27,12 @@ describe('parseAnaXml', () => {
       { dataHora: new Date('2026-09-28T19:15:00.000Z'), nivelCm: 309.5 },
       { dataHora: new Date('2026-09-28T19:45:00.000Z'), nivelCm: 312 },
     ]);
+  });
+});
+
+describe('fonteDaEstacao', () => {
+  it('usa só a Defesa Civil para estações com cod_dcrs e só a ANA para as demais', () => {
+    expect(fonteDaEstacao({ codDcrs: 'DCRS-00046' })).toBe('DCRS');
+    expect(fonteDaEstacao({ codDcrs: null })).toBe('ANA');
   });
 });
