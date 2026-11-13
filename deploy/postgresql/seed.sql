@@ -11,9 +11,9 @@ INSERT INTO estacoes (
   (1, '87150000', 'DCRS-00075', 'Linha Gonzaga', 'Linha Gonzaga', 'Rio Caí', 'Caxias do Sul', '-29.1200', '-51.1800', '52', '15', 2.50, 3.50, 5.00, true),
   (2, '87163000', 'DCRS-00085', 'Vale Real', 'Vale Real', 'Rio Caí', 'Vale Real', '-29.3700', '-51.2700', '46', '22', 2.80, 4.00, 5.50, true),
   (3, '87165001', NULL, 'Feliz', 'Feliz', 'Rio Caí', 'Feliz', '-29.4500', '-51.3000', '36', '28', 3.00, 4.50, 6.00, true),
-  (4, '87168590', NULL, 'Bom Princípio', 'Bom Princípio', 'Rio Caí', 'Bom Princípio', '-29.4800', '-51.3500', '30', '33', 3.20, 4.80, 6.50, true),
-  (5, '87170000', NULL, 'São Sebastião do Caí', 'São Sebastião do Caí', 'Rio Caí', 'São Sebastião do Caí', '-29.5900', '-51.3800', '24', '40', 3.50, 5.50, 7.50, true),
-  (6, '87270000', 'DCRS-00012', 'Montenegro', 'Montenegro', 'Rio Caí', 'Montenegro', '-29.6800', '-51.4600', '18', '50', 4.00, 6.00, 8.00, true),
+  (4, '87168590', NULL, 'Bom Princípio', 'Bom Princípio', 'Rio Caí', 'Bom Princípio', '-29.4800', '-51.3500', '30', '33', 6.00, 8.00, 10.00, true),
+  (5, '87170000', NULL, 'São Sebastião do Caí', 'São Sebastião do Caí', 'Rio Caí', 'São Sebastião do Caí', '-29.5900', '-51.3800', '24', '40', 5.00, 7.00, 10.50, true),
+  (6, '87270000', 'DCRS-00012', 'Montenegro', 'Montenegro', 'Rio Caí', 'Montenegro', '-29.6800', '-51.4600', '18', '50', 3.00, 4.00, 6.00, true),
   (7, '87300000', 'DCRS-00031', 'Triunfo', 'Triunfo', 'Rio Caí', 'Triunfo', '-29.8400', '-51.7200', '12', '62', 4.50, 7.00, 9.00, true)
 ON CONFLICT (cod_ana) DO UPDATE SET
   id = EXCLUDED.id,
